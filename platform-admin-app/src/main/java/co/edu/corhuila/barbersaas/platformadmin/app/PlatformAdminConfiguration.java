@@ -3,11 +3,16 @@ package co.edu.corhuila.barbersaas.platformadmin.app;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.AuthFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.CorrelationFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.Rs256Verifier;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.http.HttpBarbershops;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryPlanRepository;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcPlanRepository;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.UuidGenerator;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.BarbershopUseCases;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PlanUseCases;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Barbershops;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PlanRepository;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ExpireTrials;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManageBarbershops;
 import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManagePlans;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
@@ -67,8 +72,25 @@ public class PlatformAdminConfiguration {
     }
 
     @Bean
-    PlanUseCases planUseCases(PlanRepository plans) {
-        return new ManagePlans(plans, new UuidGenerator(), Clock.systemUTC());
+    PlanUseCases planUseCases(PlanRepository plans, Barbershops barbershops) {
+        return new ManagePlans(plans, barbershops, new UuidGenerator(), Clock.systemUTC());
+    }
+
+    /** barbershop-api's internal operations with this service's own token; unset, those screens answer 503. */
+    @Bean
+    Barbershops barbershops(@Value("${platform-admin.barbershop-api-url:}") String url,
+                            @Value("${platform-admin.service-token:}") String serviceToken) {
+        return new HttpBarbershops(url, serviceToken);
+    }
+
+    @Bean
+    BarbershopUseCases barbershopUseCases(Barbershops barbershops, PlanRepository plans) {
+        return new ManageBarbershops(barbershops, plans, Clock.systemUTC());
+    }
+
+    @Bean
+    ExpireTrials expireTrials(Barbershops barbershops) {
+        return new ExpireTrials(barbershops, Clock.systemUTC());
     }
 
     /** JWT_PUBLIC_KEY: the PEM itself; a one-line value with literal \n escapes, as an env file holds it, is accepted. */
