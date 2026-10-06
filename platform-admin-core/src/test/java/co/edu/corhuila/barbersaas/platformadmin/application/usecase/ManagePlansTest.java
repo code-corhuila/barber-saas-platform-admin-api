@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 class ManagePlansTest {
 
     private final FakePlans repo = new FakePlans();
-    private final ManagePlans plans = new ManagePlans(repo, UUID::randomUUID,
+    private final ManagePlans plans = new ManagePlans(repo, new FakeBarbershops(), UUID::randomUUID,
             Clock.fixed(Instant.parse("2026-10-06T12:00:00Z"), ZoneOffset.UTC));
     private final Caller admin = new Caller(UUID.randomUUID().toString(), Role.SUPER_ADMIN, null);
     private final Page.Request first = new Page.Request(1, 20);
@@ -90,7 +90,7 @@ class ManagePlansTest {
     }
 
     /** The table's rules in memory: the unique name and the key next to the plan. */
-    private static final class FakePlans implements PlanRepository {
+    static final class FakePlans implements PlanRepository {
         private final Map<UUID, SubscriptionPlan> rows = new HashMap<>();
         private final Map<String, Idempotency.Stored> keys = new HashMap<>();
 

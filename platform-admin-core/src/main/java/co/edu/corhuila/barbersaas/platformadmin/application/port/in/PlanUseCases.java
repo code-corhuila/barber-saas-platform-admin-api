@@ -23,4 +23,7 @@ public interface PlanUseCases {
     Created<SubscriptionPlan> create(Caller caller, PlanData data, String idempotencyKey);
 
     SubscriptionPlan update(Caller caller, UUID id, PlanData data);
+
+    /** DELETE: sets isActive = false; 422 while barbershops are still assigned to it (DEC-PLAT-02). */
+    void deactivate(Caller caller, UUID id);
 }
