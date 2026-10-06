@@ -3,6 +3,7 @@ package co.edu.corhuila.barbersaas.platformadmin.adapter.in.http;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.ApiError.ValidationException;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.BusinessRuleViolation;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.Forbidden;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.InvalidField;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.IdempotencyKeyReused;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.InvalidStatusTransition;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.NotFound;
@@ -39,6 +40,12 @@ public class ErrorHandler {
     ResponseEntity<ApiError> mismatch(MethodArgumentTypeMismatchException e) {
         return respond(HttpStatus.BAD_REQUEST, ApiError.of(ApiError.VALIDATION_ERROR,
                 "the request is not valid", java.util.List.of(new ApiError.FieldError(e.getName(), "invalid value"))));
+    }
+
+    @ExceptionHandler(InvalidField.class)
+    ResponseEntity<ApiError> invalidField(InvalidField e) {
+        return respond(HttpStatus.BAD_REQUEST, ApiError.of(ApiError.VALIDATION_ERROR, "the request is not valid",
+                java.util.List.of(new ApiError.FieldError(e.field(), e.getMessage()))));
     }
 
     @ExceptionHandler(Forbidden.class)
