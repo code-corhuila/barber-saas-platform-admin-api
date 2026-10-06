@@ -3,9 +3,16 @@ package co.edu.corhuila.barbersaas.platformadmin.app;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.AuthFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.CorrelationFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.Rs256Verifier;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryPlanRepository;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcPlanRepository;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.UuidGenerator;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PlanUseCases;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PlanRepository;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManagePlans;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +58,17 @@ public class PlatformAdminConfiguration {
         HikariDataSource dataSource = new HikariDataSource(pool);
         return new Database(new JdbcTemplate(dataSource),
                 new TransactionTemplate(new DataSourceTransactionManager(dataSource)));
+    }
+
+    @Bean
+    PlanRepository planRepository(Database database) {
+        return database.present().<PlanRepository>map(d -> new JdbcPlanRepository(d.jdbc(), d.tx()))
+                .orElseGet(InMemoryPlanRepository::new);
+    }
+
+    @Bean
+    PlanUseCases planUseCases(PlanRepository plans) {
+        return new ManagePlans(plans, new UuidGenerator(), Clock.systemUTC());
     }
 
     /** JWT_PUBLIC_KEY: the PEM itself; a one-line value with literal \n escapes, as an env file holds it, is accepted. */
