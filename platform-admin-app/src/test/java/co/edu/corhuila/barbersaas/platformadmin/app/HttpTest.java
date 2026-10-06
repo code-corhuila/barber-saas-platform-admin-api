@@ -23,6 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 abstract class HttpTest {
 
     static final KeyPair KEYS = generate();
+    /** barbershop-api, shared by every test class of the same Spring context. */
+    static final FakeBarbershopApi BARBERSHOPS = new FakeBarbershopApi();
 
     @Autowired
     MockMvc http;
@@ -31,6 +33,8 @@ abstract class HttpTest {
     static void keys(DynamicPropertyRegistry registry) {
         registry.add("JWT_PUBLIC_KEY", () -> "-----BEGIN PUBLIC KEY-----\n"
                 + Base64.getMimeEncoder().encodeToString(KEYS.getPublic().getEncoded()) + "\n-----END PUBLIC KEY-----");
+        registry.add("BARBERSHOP_API_URL", BARBERSHOPS::url);
+        registry.add("SERVICE_TOKEN", () -> FakeBarbershopApi.TOKEN);
     }
 
     private static KeyPair generate() {
