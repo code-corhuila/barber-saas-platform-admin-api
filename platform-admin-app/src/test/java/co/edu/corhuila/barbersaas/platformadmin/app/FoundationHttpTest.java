@@ -34,7 +34,7 @@ class FoundationHttpTest extends HttpTest {
 
     @Test
     void the_public_plan_list_needs_no_token() throws Exception {
-        http.perform(get("/api/v1/plans")).andExpect(status().isNotFound());   // the filter lets it through; no route yet
+        http.perform(get("/api/v1/plans")).andExpect(status().isOk());
     }
 
     @Test
