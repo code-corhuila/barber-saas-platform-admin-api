@@ -21,6 +21,20 @@ public abstract class ApplicationException extends RuntimeException {
         }
     }
 
+    /** 400 on one field the shape check cannot see, e.g. a plan name another plan already has. */
+    public static class InvalidField extends ApplicationException {
+        private final String field;
+
+        public InvalidField(String field, String message) {
+            super(message);
+            this.field = field;
+        }
+
+        public String field() {
+            return field;
+        }
+    }
+
     /** 422: a business rule refuses the change, e.g. an inactive plan or a plan still in use (DEC-PLAT-02). */
     public static class BusinessRuleViolation extends ApplicationException {
         public BusinessRuleViolation(String message) {
