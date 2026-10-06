@@ -1,5 +1,6 @@
 package co.edu.corhuila.barbersaas.platformadmin.application.usecase;
 
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.BusinessRuleViolation;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.IdempotencyKeyReused;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.InvalidField;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.NotFound;
@@ -7,6 +8,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Caller;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Caller.Role;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Page;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PlanUseCases;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Barbershops;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.IdGenerator;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Idempotency;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PlanRepository;
@@ -21,11 +23,13 @@ public class ManagePlans implements PlanUseCases {
     static final String CREATE_OPERATION = "POST /api/v1/platform/plans";
 
     private final PlanRepository plans;
+    private final Barbershops barbershops;
     private final IdGenerator ids;
     private final Clock clock;
 
-    public ManagePlans(PlanRepository plans, IdGenerator ids, Clock clock) {
+    public ManagePlans(PlanRepository plans, Barbershops barbershops, IdGenerator ids, Clock clock) {
         this.plans = plans;
+        this.barbershops = barbershops;
         this.ids = ids;
         this.clock = clock;
     }
@@ -81,5 +85,16 @@ public class ManagePlans implements PlanUseCases {
             throw new InvalidField("name", "another plan already has that name");
         }
         return edited;
+    }
+
+    @Override
+    public void deactivate(Caller caller, UUID id) {
+        caller.require(Role.SUPER_ADMIN);
+        SubscriptionPlan plan = plans.findById(id).orElseThrow(() -> new NotFound("Plan"));
+        // barbershop-api counts the barbershops on the plan (meta.total); plans live here, barbershops there.
+        if (barbershops.list(null, id, null, new Page.Request(1, 1)).total() > 0) {
+            throw new BusinessRuleViolation("The plan is still assigned to barbershops");
+        }
+        plans.update(plan.deactivate());
     }
 }
