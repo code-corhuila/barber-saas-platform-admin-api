@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,6 +75,14 @@ public class PlanController {
     public PlanView update(@RequestAttribute(AuthFilter.CALLER_ATTRIBUTE) Caller caller, @PathVariable UUID id,
                            @RequestBody(required = false) JsonNode json) {
         return PlanView.of(plans.update(caller, id, data(json)));
+    }
+
+    /** Deactivates, never deletes: 204, or 422 while barbershops use it (DEC-PLAT-02). */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deactivate(@RequestAttribute(AuthFilter.CALLER_ATTRIBUTE) Caller caller,
+                                           @PathVariable UUID id) {
+        plans.deactivate(caller, id);
+        return ResponseEntity.noContent().build();
     }
 
     /** CreateSubscriptionPlanRequest: additionalProperties false, every limit of the contract. */
