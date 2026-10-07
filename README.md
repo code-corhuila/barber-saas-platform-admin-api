@@ -28,10 +28,10 @@ Full policy: `00-governance/branching-policy.md` in `barber-saas-docs`.
 
 ## BarberSaaS — what this repository is
 
-The **platform-admin** service of BarberSaaS (`platform-admin-service.yaml` 1.2.0): the operation of
+The **platform-admin** service of BarberSaaS (`platform-admin-service.yaml` 1.3.0): the operation of
 the SaaS by the `SUPER_ADMIN` — subscription plans, the barbershops of the platform (through
-barbershop-api's internal operations, `DEC-SHOP-06`) and the daily trial expiration for the worker
-(FR-026). Java 21 · Spring Boot 3.5 · three Maven modules (ADR-012):
+barbershop-api's internal operations, `DEC-SHOP-06`), the daily trial expiration for the worker
+(FR-026) and the plan chosen at sign-up for the owner-onboarding saga (`DEC-PLAT-04`). Java 21 · Spring Boot 3.5 · three Maven modules (ADR-012):
 
 ```
 platform-admin-core      domain and use cases, no framework
