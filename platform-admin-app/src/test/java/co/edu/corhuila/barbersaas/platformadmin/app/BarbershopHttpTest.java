@@ -105,6 +105,34 @@ class BarbershopHttpTest extends HttpTest {
     }
 
     @Test
+    void the_workflow_assigns_the_plan_chosen_at_sign_up_and_nobody_else_can() throws Exception {
+        String active = plan("Sign-up plan");
+        String retired = plan("Retired plan");
+        http.perform(delete("/api/v1/platform/plans/" + retired).header("Authorization", superAdmin()))
+                .andExpect(status().isNoContent());
+        UUID shop = BARBERSHOPS.add("TRIAL", null, 0);
+        String workflow = serviceBearer("barber-saas-workflow");
+
+        http.perform(put("/internal/v1/barbershops/" + shop + "/plan").header("Authorization", workflow)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"planId\":\"" + active + "\"}"))
+                .andExpect(status().isNoContent());
+        http.perform(get("/api/v1/platform/barbershops/" + shop).header("Authorization", superAdmin()))
+                .andExpect(jsonPath("$.planId").value(active))
+                .andExpect(jsonPath("$.status").value("TRIAL"));
+        for (String plan : new String[] {retired, UUID.randomUUID().toString()}) {
+            http.perform(put("/internal/v1/barbershops/" + shop + "/plan").header("Authorization", workflow)
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"planId\":\"" + plan + "\"}"))
+                    .andExpect(status().isUnprocessableEntity());
+        }
+        http.perform(put("/internal/v1/barbershops/" + shop + "/plan").header("Authorization", workflow)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        http.perform(put("/internal/v1/barbershops/" + shop + "/plan").header("Authorization", superAdmin())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"planId\":\"" + active + "\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void a_barbershop_role_never_reaches_the_platform() throws Exception {
         http.perform(get("/api/v1/platform/barbershops").header("Authorization", bearer("ADMIN_BARBERSHOP", UUID.randomUUID())))
                 .andExpect(status().isForbidden());

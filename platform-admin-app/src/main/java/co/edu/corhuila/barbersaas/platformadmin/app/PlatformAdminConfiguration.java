@@ -11,6 +11,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.in.BarbershopUs
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PlanUseCases;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Barbershops;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PlanRepository;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.AssignOnboardingPlan;
 import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ExpireTrials;
 import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManageBarbershops;
 import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManagePlans;
@@ -91,6 +92,11 @@ public class PlatformAdminConfiguration {
     @Bean
     ExpireTrials expireTrials(Barbershops barbershops) {
         return new ExpireTrials(barbershops, Clock.systemUTC());
+    }
+
+    @Bean
+    AssignOnboardingPlan assignOnboardingPlan(Barbershops barbershops, PlanRepository plans) {
+        return new AssignOnboardingPlan(barbershops, plans);
     }
 
     /** JWT_PUBLIC_KEY: the PEM itself; a one-line value with literal \n escapes, as an env file holds it, is accepted. */
