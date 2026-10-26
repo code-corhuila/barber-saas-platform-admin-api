@@ -1,6 +1,13 @@
 package co.edu.corhuila.barbersaas.platformadmin.app;
 
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.AuthFilter;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.http.HttpOwners;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryOutbox;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcOutbox;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.OutboxStore;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.RelayOutbox;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.SubscriptionEvents;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.SubscriptionJobs;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.WompiSignature;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryPayments;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcPayments;
@@ -120,8 +127,33 @@ public class PlatformAdminConfiguration {
     }
 
     @Bean
-    ExpireTrials expireTrials(Barbershops barbershops) {
-        return new ExpireTrials(barbershops, Clock.systemUTC());
+    OutboxStore outboxStore(Database database, ObjectMapper json) {
+        return database.present().<OutboxStore>map(d -> new JdbcOutbox(d.jdbc(), d.tx(), json))
+                .orElseGet(InMemoryOutbox::new);
+    }
+
+    /** identity-auth's owners read (DEC-AUTH-10), with this service's own token. */
+    @Bean
+    SubscriptionEvents subscriptionEvents(OutboxStore outbox,
+                                          @Value("${platform-admin.identity-auth-api-url:}") String identityAuthUrl,
+                                          @Value("${platform-admin.service-token:}") String serviceToken) {
+        return new SubscriptionEvents(outbox, new HttpOwners(identityAuthUrl, serviceToken), new UuidGenerator(),
+                Clock.systemUTC());
+    }
+
+    @Bean
+    SubscriptionJobs subscriptionJobs(Barbershops barbershops, Payments payments, SubscriptionEvents events) {
+        return new SubscriptionJobs(barbershops, payments, events, Clock.systemUTC());
+    }
+
+    @Bean
+    RelayOutbox relayOutbox(OutboxStore outbox) {
+        return new RelayOutbox(outbox, Clock.systemUTC());
+    }
+
+    @Bean
+    ExpireTrials expireTrials(Barbershops barbershops, SubscriptionEvents events) {
+        return new ExpireTrials(barbershops, Clock.systemUTC(), events);
     }
 
     @Bean
