@@ -22,6 +22,9 @@ public class AuthFilter extends OncePerRequestFilter {
     /** GET /api/v1/plans: the active plans, read during self-registration (FR-004). */
     private static final Pattern PUBLIC = Pattern.compile("^/api/v1/plans/?$");
 
+    /** POST from Wompi: no token, its checksum is checked by the controller (DEC-PLAT-06). */
+    private static final String WOMPI_EVENTS = "/api/v1/payments/wompi/events";
+
     private final Rs256Verifier verifier;
     private final ObjectMapper json;
 
@@ -37,6 +40,9 @@ public class AuthFilter extends OncePerRequestFilter {
             return false;
         }
         if (!path.startsWith("/api/")) {
+            return true;
+        }
+        if ("POST".equals(request.getMethod()) && WOMPI_EVENTS.equals(path)) {
             return true;
         }
         return "GET".equals(request.getMethod()) && PUBLIC.matcher(path).matches();
