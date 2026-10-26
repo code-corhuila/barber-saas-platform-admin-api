@@ -1,6 +1,13 @@
 package co.edu.corhuila.barbersaas.platformadmin.app;
 
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.AuthFilter;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.WompiSignature;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryPayments;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcPayments;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.wompi.WompiCheckout;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PaymentUseCases;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Payments;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManagePayments;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.CorrelationFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.Rs256Verifier;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.http.HttpBarbershops;
@@ -87,6 +94,29 @@ public class PlatformAdminConfiguration {
     @Bean
     BarbershopUseCases barbershopUseCases(Barbershops barbershops, PlanRepository plans) {
         return new ManageBarbershops(barbershops, plans, Clock.systemUTC());
+    }
+
+    @Bean
+    Payments payments(Database database) {
+        return database.present().<Payments>map(d -> new JdbcPayments(d.jdbc(), d.tx()))
+                .orElseGet(InMemoryPayments::new);
+    }
+
+    /** Wompi in sandbox (ADR-017): keys and secrets from the environment, never versioned. */
+    @Bean
+    PaymentUseCases paymentUseCases(Payments payments, PlanRepository plans, Barbershops barbershops,
+                                    @Value("${platform-admin.wompi.checkout-url:}") String checkoutUrl,
+                                    @Value("${platform-admin.wompi.public-key:}") String publicKey,
+                                    @Value("${platform-admin.wompi.integrity-secret:}") String integritySecret,
+                                    @Value("${platform-admin.wompi.redirect-url:}") String redirectUrl) {
+        return new ManagePayments(payments, plans, barbershops,
+                new WompiCheckout(checkoutUrl, publicKey, integritySecret, redirectUrl), new UuidGenerator(),
+                Clock.systemUTC());
+    }
+
+    @Bean
+    WompiSignature wompiSignature(@Value("${platform-admin.wompi.events-secret:}") String eventsSecret) {
+        return new WompiSignature(eventsSecret);
     }
 
     @Bean
