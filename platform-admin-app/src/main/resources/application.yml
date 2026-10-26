@@ -31,6 +31,8 @@ platform-admin:
     statement-timeout-ms: ${DB_STATEMENT_TIMEOUT_MS:5000}
   # barbershop-api's internal operations (DEC-SHOP-06). Empty: the barbershop screens answer 503.
   barbershop-api-url: ${BARBERSHOP_API_URL:}
+  # identity-auth's owners read (DEC-AUTH-10), for the plan notices. Empty: the notices answer 503.
+  identity-auth-api-url: ${IDENTITY_AUTH_API_URL:}
   # This service's own token (sub: barber-saas-platform-admin-api), never a user's.
   service-token: ${SERVICE_TOKEN:}
   # Wompi in sandbox (ADR-017). Empty secrets: no event is accepted (401) and the checkout cannot be paid.
