@@ -15,6 +15,8 @@ services:
       DB_POOL_MAX: "10"
       # barbershop-api's internal operations (DEC-SHOP-06), with this service's own token.
       BARBERSHOP_API_URL: http://barbershop-api:8080
+      # identity-auth's owners read (DEC-AUTH-10) for PlanExpiringSoon and BarbershopSuspended.
+      IDENTITY_AUTH_API_URL: http://identity-auth-api:8080
       SERVICE_TOKEN: ${PLATFORM_ADMIN_SERVICE_TOKEN:?run barber-saas-infra-postgres/scripts/dev-keys.sh}
       # Wompi in sandbox (ADR-017): test keys of the team's Wompi account, never versioned. Empty: no payment works.
       WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY:-}
