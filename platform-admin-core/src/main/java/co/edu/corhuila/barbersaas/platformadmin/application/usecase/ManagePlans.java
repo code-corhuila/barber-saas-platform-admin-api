@@ -22,6 +22,9 @@ public class ManagePlans implements PlanUseCases {
 
     static final String CREATE_OPERATION = "POST /api/v1/platform/plans";
 
+    /** The only caller of the internal plan read (DEC-SHOP-07). */
+    public static final String BARBERSHOP_API = "barber-saas-barbershop-api";
+
     private final PlanRepository plans;
     private final Barbershops barbershops;
     private final IdGenerator ids;
@@ -48,6 +51,12 @@ public class ManagePlans implements PlanUseCases {
     @Override
     public SubscriptionPlan get(Caller caller, UUID id) {
         caller.require(Role.SUPER_ADMIN);
+        return plans.findById(id).orElseThrow(() -> new NotFound("Plan"));
+    }
+
+    @Override
+    public SubscriptionPlan getForBarbershopApi(Caller caller, UUID id) {
+        caller.requireService(BARBERSHOP_API);
         return plans.findById(id).orElseThrow(() -> new NotFound("Plan"));
     }
 
