@@ -51,6 +51,16 @@ final class FakeBarbershopApi {
     }
 
     /** A barbershop created {@code daysAgo} days ago, with its 60-day trial. */
+    /** The barbershop as barbershop-api would answer it now. */
+    JsonNode row(UUID id) {
+        return rows.get(id);
+    }
+
+    /** barbershop-service.yaml 1.5.0: the active barber profiles (DEC-SHOP-07). */
+    void barbers(UUID id, int activeBarbers) {
+        rows.get(id).put("activeBarbers", activeBarbers);
+    }
+
     UUID add(String status, UUID planId, int daysAgo) {
         Instant created = Instant.now().minus(Duration.ofDays(daysAgo));
         UUID id = UUID.randomUUID();
