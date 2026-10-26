@@ -59,9 +59,17 @@ Sandbox only: `WOMPI_PUBLIC_KEY` (`pub_test_…`), `WOMPI_INTEGRITY_SECRET` and 
 from the environment and are never versioned. Wompi must reach the events route: a free tunnel in
 development, the public address of the deployment (ADR-019) otherwise.
 
+### The worker's daily calls and the outbox (DEC-PLAT-07, ADR-016)
+
+Only the service token of `barber-saas-worker`, never routed by the gateway:
+`POST /internal/v1/trials/expire` and `/internal/v1/subscriptions/expire` suspend an ended trial or paid
+month and write `BarbershopSuspended`; `/internal/v1/subscriptions/notices` writes `PlanExpiringSoon` at 7
+days and 1 day before the end, once each; `GET /internal/v1/outbox-events` and its `published` / `failed`
+confirmations relay them. The owners' e-mails come from identity-auth (`IDENTITY_AUTH_API_URL`, DEC-AUTH-10).
+
 ### Where the data is
 
-`platform_admin.subscription_plan`, `payment` and `idempotency_key` in the single PostgreSQL instance,
+`platform_admin.subscription_plan`, `payment`, `subscription_notice`, `outbox_event` and `idempotency_key` in the single PostgreSQL instance,
 migrated by `barber-saas-platform-admin-db`; this service connects as `platform_admin_app`. Barbershops
 belong to barbershop-api: this service never reads or writes their schema (ADR-004, ADR-011).
 
