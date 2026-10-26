@@ -20,6 +20,9 @@ public interface PlanUseCases {
 
     SubscriptionPlan get(Caller caller, UUID id);
 
+    /** GET /internal/v1/plans/{id}: barbershop-api checks the barber limit (DEC-SHOP-07); also inactive plans. */
+    SubscriptionPlan getForBarbershopApi(Caller caller, UUID id);
+
     Created<SubscriptionPlan> create(Caller caller, PlanData data, String idempotencyKey);
 
     SubscriptionPlan update(Caller caller, UUID id, PlanData data);
