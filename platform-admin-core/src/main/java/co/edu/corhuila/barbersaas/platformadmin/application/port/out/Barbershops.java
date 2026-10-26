@@ -13,11 +13,14 @@ import java.util.UUID;
  */
 public interface Barbershops {
 
-    /** The Barbershop schema of barbershop-service.yaml, as platform-admin shows it. */
+    /**
+     * The Barbershop schema of barbershop-service.yaml, as platform-admin shows it. {@code activeBarbers}
+     * comes from 1.5.0 (DEC-SHOP-07); null when barbershop-api is older.
+     */
     record Barbershop(UUID id, String name, String address, String city, BigDecimal latitude, BigDecimal longitude,
                       String phone, String whatsappNumber, String logoUrl, String status, UUID planId,
                       String timezone, int cancellationPolicyHours, Instant trialEndsAt, Instant createdAt,
-                      Instant updatedAt) { }
+                      Instant updatedAt, Integer activeBarbers) { }
 
     /** CreateBarbershopRequest of barbershop-service.yaml: what the internal create accepts. */
     record NewBarbershop(String name, String city, String address, String phone, BigDecimal latitude,
