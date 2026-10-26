@@ -16,6 +16,12 @@ services:
       # barbershop-api's internal operations (DEC-SHOP-06), with this service's own token.
       BARBERSHOP_API_URL: http://barbershop-api:8080
       SERVICE_TOKEN: ${PLATFORM_ADMIN_SERVICE_TOKEN:?run barber-saas-infra-postgres/scripts/dev-keys.sh}
+      # Wompi in sandbox (ADR-017): test keys of the team's Wompi account, never versioned. Empty: no payment works.
+      WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY:-}
+      WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET:-}
+      WOMPI_EVENTS_SECRET: ${WOMPI_EVENTS_SECRET:-}
+      # Where Wompi sends the owner back after paying (the app's "Mis pagos").
+      WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-}
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /health HTTP/1.0\r\n\r\n\" >&3 && grep -q ok <&3'"]
       interval: 5s
