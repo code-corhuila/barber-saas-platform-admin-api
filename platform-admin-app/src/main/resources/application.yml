@@ -33,3 +33,10 @@ platform-admin:
   barbershop-api-url: ${BARBERSHOP_API_URL:}
   # This service's own token (sub: barber-saas-platform-admin-api), never a user's.
   service-token: ${SERVICE_TOKEN:}
+  # Wompi in sandbox (ADR-017). Empty secrets: no event is accepted (401) and the checkout cannot be paid.
+  wompi:
+    checkout-url: ${WOMPI_CHECKOUT_URL:https://checkout.wompi.co/p/}
+    public-key: ${WOMPI_PUBLIC_KEY:}
+    integrity-secret: ${WOMPI_INTEGRITY_SECRET:}
+    events-secret: ${WOMPI_EVENTS_SECRET:}
+    redirect-url: ${WOMPI_REDIRECT_URL:}
