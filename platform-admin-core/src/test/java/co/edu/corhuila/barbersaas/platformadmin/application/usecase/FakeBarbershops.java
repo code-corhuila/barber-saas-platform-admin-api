@@ -28,7 +28,7 @@ final class FakeBarbershops implements Barbershops {
     Barbershop add(String status, UUID planId, Instant createdAt) {
         Barbershop b = new Barbershop(UUID.randomUUID(), "Barbería " + rows.size(), null, "Neiva", null, null, "300",
                 null, null, status, planId, "America/Bogota", 2, createdAt.plus(Duration.ofDays(60)), createdAt,
-                createdAt);
+                createdAt, 1);
         rows.put(b.id(), b);
         return b;
     }
@@ -63,7 +63,7 @@ final class FakeBarbershops implements Barbershops {
         }
         return put(new Barbershop(b.id(), b.name(), b.address(), b.city(), b.latitude(), b.longitude(), b.phone(),
                 b.whatsappNumber(), b.logoUrl(), status, b.planId(), b.timezone(), b.cancellationPolicyHours(),
-                b.trialEndsAt(), b.createdAt(), b.updatedAt()));
+                b.trialEndsAt(), b.createdAt(), b.updatedAt(), b.activeBarbers()));
     }
 
     @Override
@@ -74,7 +74,7 @@ final class FakeBarbershops implements Barbershops {
         }
         return put(new Barbershop(b.id(), b.name(), b.address(), b.city(), b.latitude(), b.longitude(), b.phone(),
                 b.whatsappNumber(), b.logoUrl(), b.status(), planId, b.timezone(), b.cancellationPolicyHours(),
-                b.trialEndsAt(), b.createdAt(), b.updatedAt()));
+                b.trialEndsAt(), b.createdAt(), b.updatedAt(), b.activeBarbers()));
     }
 
     @Override
@@ -86,7 +86,7 @@ final class FakeBarbershops implements Barbershops {
         Instant now = Instant.parse("2026-10-06T12:00:00Z");
         Barbershop b = put(new Barbershop(UUID.randomUUID(), n.name(), n.address(), n.city(), n.latitude(),
                 n.longitude(), Objects.requireNonNull(n.phone()), null, null, "TRIAL", null, "America/Bogota", 2,
-                now.plus(Duration.ofDays(60)), now, now));
+                now.plus(Duration.ofDays(60)), now, now, 0));
         keys.put(idempotencyKey, b.id());
         return new Created(b, true);
     }
