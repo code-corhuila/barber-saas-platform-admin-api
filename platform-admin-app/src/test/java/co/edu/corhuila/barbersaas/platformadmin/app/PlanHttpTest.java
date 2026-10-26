@@ -95,4 +95,27 @@ class PlanHttpTest extends HttpTest {
         http.perform(get("/api/v1/platform/plans/" + UUID.randomUUID()).header("Authorization", superAdmin()))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void barbershop_api_reads_a_plan_for_the_barber_limit() throws Exception {
+        String id = create("Internal plan", 300);
+        http.perform(get("/internal/v1/plans/" + id).header("Authorization", serviceBearer("barber-saas-barbershop-api")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.maxBarbers").value(3));
+        http.perform(get("/internal/v1/plans/" + UUID.randomUUID())
+                        .header("Authorization", serviceBearer("barber-saas-barbershop-api")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void only_barbershop_api_reads_a_plan_internally() throws Exception {
+        String id = create("Guarded plan", 400);
+        for (String token : new String[] {serviceBearer("barber-saas-worker"), superAdmin(),
+                bearer("ADMIN_BARBERSHOP", UUID.randomUUID())}) {
+            http.perform(get("/internal/v1/plans/" + id).header("Authorization", token))
+                    .andExpect(status().isForbidden());
+        }
+        http.perform(get("/internal/v1/plans/" + id)).andExpect(status().isUnauthorized());
+    }
 }
