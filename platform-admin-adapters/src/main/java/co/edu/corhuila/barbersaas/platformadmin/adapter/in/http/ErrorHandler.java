@@ -68,12 +68,15 @@ public class ErrorHandler {
         return respond(HttpStatus.CONFLICT, ApiError.of(ApiError.INVALID_STATUS_TRANSITION, e.getMessage()));
     }
 
-    /** barbershop-api did not answer (DEC-SHOP-06): the cause goes to the log only. */
+    /**
+     * barbershop-api did not answer (DEC-SHOP-06), or no payment checkout is configured (DEC-PLAT-08):
+     * the cause goes to the log only.
+     */
     @ExceptionHandler(Unavailable.class)
     ResponseEntity<ApiError> unavailable(Unavailable e) {
         log.error("dependency failed: {}", e.getMessage());
         return respond(HttpStatus.SERVICE_UNAVAILABLE,
-                ApiError.of(ApiError.SERVICE_UNAVAILABLE, "the barbershops could not be reached, try again"));
+                ApiError.of(ApiError.SERVICE_UNAVAILABLE, "a service this needs is not available, try again later"));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
