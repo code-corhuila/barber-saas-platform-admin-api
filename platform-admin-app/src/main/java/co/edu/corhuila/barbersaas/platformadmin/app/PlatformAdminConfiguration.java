@@ -1,6 +1,8 @@
 package co.edu.corhuila.barbersaas.platformadmin.app;
 
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.AuthFilter;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.PaymentSimulatorController.PaymentMode;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.wompi.SimulatedCheckout;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.http.HttpOwners;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryOutbox;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcOutbox;
@@ -109,15 +111,21 @@ public class PlatformAdminConfiguration {
                 .orElseGet(InMemoryPayments::new);
     }
 
+    /** Without a Wompi public key, payments go to the simulated checkout (DEC-PLAT-08). */
+    @Bean
+    PaymentMode paymentMode(@Value("${platform-admin.wompi.public-key:}") String publicKey) {
+        return new PaymentMode(publicKey.isBlank());
+    }
+
     /** Wompi in sandbox (ADR-017): keys and secrets from the environment, never versioned. */
     @Bean
-    PaymentUseCases paymentUseCases(Payments payments, PlanRepository plans, Barbershops barbershops,
+    PaymentUseCases paymentUseCases(Payments payments, PlanRepository plans, Barbershops barbershops, PaymentMode mode,
                                     @Value("${platform-admin.wompi.checkout-url:}") String checkoutUrl,
                                     @Value("${platform-admin.wompi.public-key:}") String publicKey,
                                     @Value("${platform-admin.wompi.integrity-secret:}") String integritySecret,
                                     @Value("${platform-admin.wompi.redirect-url:}") String redirectUrl) {
-        return new ManagePayments(payments, plans, barbershops,
-                new WompiCheckout(checkoutUrl, publicKey, integritySecret, redirectUrl), new UuidGenerator(),
+        return new ManagePayments(payments, plans, barbershops, mode.simulated() ? new SimulatedCheckout()
+                : new WompiCheckout(checkoutUrl, publicKey, integritySecret, redirectUrl), new UuidGenerator(),
                 Clock.systemUTC());
     }
 
