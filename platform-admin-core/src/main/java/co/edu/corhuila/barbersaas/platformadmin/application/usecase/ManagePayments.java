@@ -125,6 +125,11 @@ public class ManagePayments implements PaymentUseCases {
         payments.finish(payment.id(), status, result.transactionId(), from.plus(PAID_PERIOD), now);
     }
 
+    @Override
+    public Payment byReference(String reference) {
+        return payments.findByReference(reference).orElseThrow(() -> new NotFound("Payment"));
+    }
+
     /** The paid plan and status ACTIVE, both idempotent: a retried event finds them already set. */
     private void activate(Payment payment) {
         Barbershop b = barbershops.get(payment.barbershopId());
