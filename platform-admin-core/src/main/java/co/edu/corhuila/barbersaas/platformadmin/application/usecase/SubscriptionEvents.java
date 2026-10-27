@@ -5,6 +5,8 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.out.IdGenerator
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.OutboxEvent;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.OutboxStore;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Owners;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PlanRepository;
+import co.edu.corhuila.barbersaas.platformadmin.domain.model.SubscriptionPlan;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -13,7 +15,8 @@ import java.util.Map;
 
 /**
  * The two subscription events of 02-domain/domain-events.md (DEC-PLAT-07): PlanExpiringSoon and
- * BarbershopSuspended. Both carry the owners' id, name and e-mail, so notifications can reach them.
+ * BarbershopSuspended. Both carry the owners' id, name and e-mail, so notifications can reach them;
+ * PlanExpiringSoon also carries the plan's name (null when the barbershop has none).
  */
 public class SubscriptionEvents {
 
@@ -22,12 +25,14 @@ public class SubscriptionEvents {
 
     private final OutboxStore outbox;
     private final Owners owners;
+    private final PlanRepository plans;
     private final IdGenerator ids;
     private final Clock clock;
 
-    public SubscriptionEvents(OutboxStore outbox, Owners owners, IdGenerator ids, Clock clock) {
+    public SubscriptionEvents(OutboxStore outbox, Owners owners, PlanRepository plans, IdGenerator ids, Clock clock) {
         this.outbox = outbox;
         this.owners = owners;
+        this.plans = plans;
         this.ids = ids;
         this.clock = clock;
     }
@@ -42,6 +47,8 @@ public class SubscriptionEvents {
     /** False when that notice was already given for that end date. */
     public boolean expiring(Barbershop b, String kind, Instant endsAt, String threshold) {
         Map<String, Object> payload = base(b);
+        payload.put("planName", b.planId() == null ? null
+                : plans.findById(b.planId()).map(SubscriptionPlan::name).orElse(null));
         payload.put("kind", kind);
         payload.put("endsAt", endsAt.toString());
         payload.put("threshold", threshold);
