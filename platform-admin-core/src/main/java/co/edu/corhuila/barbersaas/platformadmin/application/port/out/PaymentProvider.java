@@ -7,4 +7,9 @@ public interface PaymentProvider {
 
     /** The page that charges exactly this payment: amount, currency and reference signed. */
     String checkoutUrl(Payment payment);
+
+    /** False when no checkout is configured (DEC-PLAT-08): then no payment is even started. */
+    default boolean available() {
+        return true;
+    }
 }
