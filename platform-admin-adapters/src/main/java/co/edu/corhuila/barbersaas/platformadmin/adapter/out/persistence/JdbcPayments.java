@@ -62,6 +62,16 @@ public class JdbcPayments implements Payments {
     }
 
     @Override
+    public Revenue revenue(Instant since) {
+        return jdbc.queryForObject("SELECT coalesce(sum(amount_cents), 0) AS total, "
+                        + "coalesce(sum(amount_cents) FILTER (WHERE updated_at >= ?), 0) AS since, "
+                        + "count(*) FILTER (WHERE updated_at >= ?) AS since_count "
+                        + "FROM platform_admin.payment WHERE status = 'APPROVED'",
+                (rs, n) -> new Revenue(rs.getLong("total"), rs.getLong("since"), rs.getLong("since_count")),
+                Timestamp.from(since), Timestamp.from(since));
+    }
+
+    @Override
     public Optional<Idempotency.Stored> findKey(String key, String operation) {
         return JdbcIdempotency.find(jdbc, key, operation);
     }
