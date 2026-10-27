@@ -18,7 +18,9 @@ services:
       # identity-auth's owners read (DEC-AUTH-10) for PlanExpiringSoon and BarbershopSuspended.
       IDENTITY_AUTH_API_URL: http://identity-auth-api:8080
       SERVICE_TOKEN: ${PLATFORM_ADMIN_SERVICE_TOKEN:?run barber-saas-infra-postgres/scripts/dev-keys.sh}
-      # Wompi in sandbox (ADR-017): test keys of the team's Wompi account, never versioned. Empty: no payment works.
+      # Without Wompi keys, the simulated checkout only when the environment file says true (DEC-PLAT-08).
+      PAYMENTS_SIMULATOR: ${PAYMENTS_SIMULATOR:-false}
+      # Wompi in sandbox (ADR-017): test keys of the team's Wompi account, never versioned.
       WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY:-}
       WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET:-}
       WOMPI_EVENTS_SECRET: ${WOMPI_EVENTS_SECRET:-}
