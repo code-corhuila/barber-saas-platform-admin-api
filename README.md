@@ -59,6 +59,11 @@ Sandbox only: `WOMPI_PUBLIC_KEY` (`pub_test_…`), `WOMPI_INTEGRITY_SECRET` and 
 from the environment and are never versioned. Wompi must reach the events route: a free tunnel in
 development, the public address of the deployment (ADR-019) otherwise.
 
+Without a Wompi key, "Pagar plan" opens the simulated checkout (`/api/v1/payments/simulator/{reference}`,
+DEC-PLAT-08) **only when the environment sets `PAYMENTS_SIMULATOR=true`**. With neither, `POST
+/api/v1/payments` answers 503 before storing anything and the simulator answers 404, so a host never
+gives plans away by forgetting a key. A Wompi key always wins over the simulator.
+
 ### The worker's daily calls and the outbox (DEC-PLAT-07, ADR-016)
 
 Only the service token of `barber-saas-worker`, never routed by the gateway:
