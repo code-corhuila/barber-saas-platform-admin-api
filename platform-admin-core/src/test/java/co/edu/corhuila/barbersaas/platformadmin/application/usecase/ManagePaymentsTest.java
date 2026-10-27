@@ -201,6 +201,10 @@ class ManagePaymentsTest {
                     .map(Payment::periodEnd).max(Comparator.naturalOrder());
         }
 
+        public Revenue revenue(Instant since) {
+            return new Revenue(0, 0, 0);
+        }
+
         public Optional<Idempotency.Stored> findKey(String key, String operation) {
             return Optional.ofNullable(keys.get(operation + key));
         }

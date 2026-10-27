@@ -128,6 +128,7 @@ class SubscriptionJobsTest {
             public Optional<Payment> findByReference(String reference) { return Optional.empty(); }
             public Page<Payment> page(UUID barbershopId, Page.Request page) { return Page.of(List.of(), page); }
             public Optional<Instant> paidUntil(UUID id) { return Optional.ofNullable(paidUntil.get(id)); }
+            public Payments.Revenue revenue(Instant since) { return new Payments.Revenue(0, 0, 0); }
             public Optional<Idempotency.Stored> findKey(String key, String operation) { return Optional.empty(); }
             public void saveNew(Payment payment, Idempotency.Key key) { }
             public boolean finish(UUID id, String s, String tx, Instant end, Instant now) { return false; }

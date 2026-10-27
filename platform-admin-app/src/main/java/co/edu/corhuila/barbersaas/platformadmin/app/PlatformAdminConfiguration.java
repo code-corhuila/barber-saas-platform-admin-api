@@ -15,10 +15,12 @@ import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.WompiSignature;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryPayments;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcPayments;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.wompi.WompiCheckout;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.MetricsUseCases;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PaymentUseCases;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PaymentProvider;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Payments;
 import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManagePayments;
+import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ReadMetrics;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.CorrelationFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.Rs256Verifier;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.http.HttpBarbershops;
@@ -124,6 +126,11 @@ public class PlatformAdminConfiguration {
     }
 
     /** Wompi in sandbox (ADR-017): keys and secrets from the environment, never versioned. */
+    @Bean
+    MetricsUseCases metricsUseCases(Barbershops barbershops, Payments payments) {
+        return new ReadMetrics(barbershops, payments, Clock.systemUTC());
+    }
+
     @Bean
     PaymentUseCases paymentUseCases(Payments payments, PlanRepository plans, Barbershops barbershops, PaymentMode mode,
                                     @Value("${platform-admin.wompi.checkout-url:}") String checkoutUrl,
