@@ -5,6 +5,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationE
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.IdempotencyKeyReused;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.InvalidStatusTransition;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.NotFound;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.Unavailable;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Caller;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Caller.Role;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Page;
@@ -65,6 +66,9 @@ public class ManagePayments implements PaymentUseCases {
     @Override
     public Checkout start(Caller caller, UUID planId, String idempotencyKey) {
         caller.require(Role.ADMIN_BARBERSHOP);
+        if (!provider.available()) {
+            throw new Unavailable("No payment checkout is configured");
+        }
         UUID barbershopId = caller.tenant();
         String hash = RequestHash.of(barbershopId, planId);
         Optional<Idempotency.Stored> stored = payments.findKey(idempotencyKey, START_OPERATION);

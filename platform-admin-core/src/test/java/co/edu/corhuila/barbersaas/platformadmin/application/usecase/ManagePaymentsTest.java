@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.BusinessRuleViolation;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.Forbidden;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.IdempotencyKeyReused;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.in.ApplicationException.Unavailable;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Caller;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Caller.Role;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.Page;
@@ -16,6 +17,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PaymentUseCa
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PaymentUseCases.ProviderResult;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Barbershops.Barbershop;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Idempotency;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PaymentProvider;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Payments;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PlanRepository;
 import co.edu.corhuila.barbersaas.platformadmin.domain.model.Payment;
@@ -44,6 +46,7 @@ class ManagePaymentsTest {
     private SubscriptionPlan pro;
     private Barbershop shop;
     private ManagePayments service;
+    private PlanRepository plans;
 
     @BeforeEach
     void setUp() {
@@ -51,15 +54,17 @@ class ManagePaymentsTest {
         payments = new FakePayments();
         basico = new SubscriptionPlan(UUID.randomUUID(), "Basico", 4_990_000, 2, null, true, NOW);
         pro = new SubscriptionPlan(UUID.randomUUID(), "Pro", 9_990_000, 6, null, true, NOW);
-        Map<UUID, SubscriptionPlan> plans = Map.of(basico.id(), basico, pro.id(), pro);
+        Map<UUID, SubscriptionPlan> byId = Map.of(basico.id(), basico, pro.id(), pro);
         shop = barbershops.add("TRIAL", basico.id(), NOW.minus(Duration.ofDays(10)));
-        service = new ManagePayments(payments, new PlanRepository() {
+        plans = new PlanRepository() {
             public Page<SubscriptionPlan> page(boolean onlyActive, Page.Request page) { throw new AssertionError(); }
-            public Optional<SubscriptionPlan> findById(UUID id) { return Optional.ofNullable(plans.get(id)); }
+            public Optional<SubscriptionPlan> findById(UUID id) { return Optional.ofNullable(byId.get(id)); }
             public Optional<Idempotency.Stored> findKey(String key, String operation) { return Optional.empty(); }
             public void saveNew(SubscriptionPlan plan, Idempotency.Key key) { throw new AssertionError(); }
             public void update(SubscriptionPlan plan) { throw new AssertionError(); }
-        }, barbershops, p -> "https://checkout.test/p/?reference=" + p.reference(), UUID::randomUUID,
+        };
+        service = new ManagePayments(payments, plans, barbershops,
+                p -> "https://checkout.test/p/?reference=" + p.reference(), UUID::randomUUID,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -88,6 +93,18 @@ class ManagePaymentsTest {
         assertFalse(retry.created());
         assertEquals(first.payment().id(), retry.payment().id());
         assertThrows(IdempotencyKeyReused.class, () -> service.start(owner(), basico.id(), "key-pay-0001"));
+    }
+
+    @Test
+    void without_a_checkout_no_payment_is_started() {
+        ManagePayments noCheckout = new ManagePayments(payments, plans, barbershops, new PaymentProvider() {
+            public String checkoutUrl(Payment payment) { throw new AssertionError(); }
+            public boolean available() { return false; }
+        }, UUID::randomUUID, Clock.fixed(NOW, ZoneOffset.UTC));
+
+        assertThrows(Unavailable.class, () -> noCheckout.start(owner(), pro.id(), "key-pay-0009"));
+        assertTrue(payments.byId.isEmpty());
+        assertTrue(payments.keys.isEmpty());
     }
 
     @Test
