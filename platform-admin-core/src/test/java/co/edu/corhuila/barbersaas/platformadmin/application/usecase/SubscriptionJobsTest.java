@@ -16,6 +16,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.out.OutboxStore
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Owners.Owner;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Payments;
 import co.edu.corhuila.barbersaas.platformadmin.domain.model.Payment;
+import co.edu.corhuila.barbersaas.platformadmin.domain.model.SubscriptionPlan;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,8 +37,9 @@ class SubscriptionJobsTest {
     private final FakeBarbershops shops = new FakeBarbershops();
     private final Map<UUID, Instant> paidUntil = new HashMap<>();
     private final FakeOutbox outbox = new FakeOutbox();
+    private final ManagePlansTest.FakePlans plans = new ManagePlansTest.FakePlans();
     private final SubscriptionEvents events = new SubscriptionEvents(outbox,
-            id -> List.of(new Owner(UUID.randomUUID(), "Andres Rojas", "andres@example.com")), UUID::randomUUID,
+            id -> List.of(new Owner(UUID.randomUUID(), "Andres Rojas", "andres@example.com")), plans, UUID::randomUUID,
             Clock.fixed(NOW, ZoneOffset.UTC));
     private final SubscriptionJobs jobs = new SubscriptionJobs(shops, payments(), events, Clock.fixed(NOW, ZoneOffset.UTC));
     private final Caller worker = new Caller(ExpireTrials.WORKER, Role.SERVICE, null);
@@ -79,6 +81,23 @@ class SubscriptionJobsTest {
         assertTrue(outbox.events.stream().allMatch(e -> e.type().equals("PlanExpiringSoon")));
         assertEquals(trial.id(), outbox.events.stream().filter(e -> "TRIAL".equals(e.payload().get("kind")))
                 .findFirst().orElseThrow().barbershopId());
+    }
+
+    @Test
+    void the_notice_names_the_plan() {
+        SubscriptionPlan pro = SubscriptionPlan.create(UUID.randomUUID(), "Pro", 100, 5, null, NOW);
+        plans.update(pro);
+        Barbershop month = shops.add("ACTIVE", pro.id(), NOW.minus(Duration.ofDays(90)));
+        paidUntil.put(month.id(), NOW.plus(Duration.ofHours(20)));
+        shops.add("TRIAL", null, NOW.minus(Duration.ofDays(54)));
+
+        jobs.notices(worker, 50);
+
+        Map<Object, Object> names = new HashMap<>();
+        outbox.events.forEach(e -> names.put(e.payload().get("kind"), e.payload().get("planName")));
+        assertEquals("Pro", names.get("PAID"));
+        assertTrue(names.containsKey("TRIAL"));
+        assertNull(names.get("TRIAL"));
     }
 
     @Test

@@ -149,11 +149,11 @@ public class PlatformAdminConfiguration {
 
     /** identity-auth's owners read (DEC-AUTH-10), with this service's own token. */
     @Bean
-    SubscriptionEvents subscriptionEvents(OutboxStore outbox,
+    SubscriptionEvents subscriptionEvents(OutboxStore outbox, PlanRepository plans,
                                           @Value("${platform-admin.identity-auth-api-url:}") String identityAuthUrl,
                                           @Value("${platform-admin.service-token:}") String serviceToken) {
-        return new SubscriptionEvents(outbox, new HttpOwners(identityAuthUrl, serviceToken), new UuidGenerator(),
-                Clock.systemUTC());
+        return new SubscriptionEvents(outbox, new HttpOwners(identityAuthUrl, serviceToken), plans,
+                new UuidGenerator(), Clock.systemUTC());
     }
 
     @Bean
