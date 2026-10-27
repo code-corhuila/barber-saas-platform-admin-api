@@ -9,6 +9,9 @@ import java.util.UUID;
 /** platform_admin.payment (ADR-017). */
 public interface Payments {
 
+    /** The APPROVED payments: all of them, and those approved since a moment (DEC-PLAT-09). */
+    record Revenue(long totalCents, long sinceCents, long sinceCount) { }
+
     Optional<Payment> findById(UUID id);
 
     Optional<Payment> findByReference(String reference);
@@ -18,6 +21,9 @@ public interface Payments {
 
     /** max(period_end) of the barbershop's APPROVED payments (DEC-PLAT-07). */
     Optional<Instant> paidUntil(UUID barbershopId);
+
+    /** APPROVED payments; "since" counts by the moment they were approved (updatedAt). */
+    Revenue revenue(Instant since);
 
     Optional<Idempotency.Stored> findKey(String key, String operation);
 
