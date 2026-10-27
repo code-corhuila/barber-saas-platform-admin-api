@@ -29,4 +29,7 @@ public interface PaymentUseCases {
 
     /** DEC-PLAT-06: applies the provider's result once; a repeated or unknown one changes nothing. */
     void apply(ProviderResult result);
+
+    /** The payment a checkout page shows (the simulated checkout, DEC-PLAT-08); NotFound otherwise. */
+    Payment byReference(String reference);
 }
