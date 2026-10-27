@@ -2,6 +2,7 @@ package co.edu.corhuila.barbersaas.platformadmin.app;
 
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.AuthFilter;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.PaymentSimulatorController.PaymentMode;
+import co.edu.corhuila.barbersaas.platformadmin.adapter.out.wompi.NoCheckout;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.wompi.SimulatedCheckout;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.http.HttpOwners;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemoryOutbox;
@@ -15,6 +16,7 @@ import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.InMemory
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.persistence.JdbcPayments;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.out.wompi.WompiCheckout;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.in.PaymentUseCases;
+import co.edu.corhuila.barbersaas.platformadmin.application.port.out.PaymentProvider;
 import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Payments;
 import co.edu.corhuila.barbersaas.platformadmin.application.usecase.ManagePayments;
 import co.edu.corhuila.barbersaas.platformadmin.adapter.in.http.CorrelationFilter;
@@ -111,10 +113,14 @@ public class PlatformAdminConfiguration {
                 .orElseGet(InMemoryPayments::new);
     }
 
-    /** Without a Wompi public key, payments go to the simulated checkout (DEC-PLAT-08). */
+    /**
+     * DEC-PLAT-08: without a Wompi public key payments go to the simulated checkout only when the host
+     * asks for it (PAYMENTS_SIMULATOR=true); with neither, no payment can be started.
+     */
     @Bean
-    PaymentMode paymentMode(@Value("${platform-admin.wompi.public-key:}") String publicKey) {
-        return new PaymentMode(publicKey.isBlank());
+    PaymentMode paymentMode(@Value("${platform-admin.wompi.public-key:}") String publicKey,
+                            @Value("${platform-admin.payments.simulator:false}") boolean simulator) {
+        return new PaymentMode(publicKey.isBlank() && simulator);
     }
 
     /** Wompi in sandbox (ADR-017): keys and secrets from the environment, never versioned. */
@@ -124,9 +130,10 @@ public class PlatformAdminConfiguration {
                                     @Value("${platform-admin.wompi.public-key:}") String publicKey,
                                     @Value("${platform-admin.wompi.integrity-secret:}") String integritySecret,
                                     @Value("${platform-admin.wompi.redirect-url:}") String redirectUrl) {
-        return new ManagePayments(payments, plans, barbershops, mode.simulated() ? new SimulatedCheckout()
-                : new WompiCheckout(checkoutUrl, publicKey, integritySecret, redirectUrl), new UuidGenerator(),
-                Clock.systemUTC());
+        PaymentProvider provider = !publicKey.isBlank()
+                ? new WompiCheckout(checkoutUrl, publicKey, integritySecret, redirectUrl)
+                : mode.simulated() ? new SimulatedCheckout() : new NoCheckout();
+        return new ManagePayments(payments, plans, barbershops, provider, new UuidGenerator(), Clock.systemUTC());
     }
 
     @Bean

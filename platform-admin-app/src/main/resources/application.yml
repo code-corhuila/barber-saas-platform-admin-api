@@ -35,7 +35,11 @@ platform-admin:
   identity-auth-api-url: ${IDENTITY_AUTH_API_URL:}
   # This service's own token (sub: barber-saas-platform-admin-api), never a user's.
   service-token: ${SERVICE_TOKEN:}
-  # Wompi in sandbox (ADR-017). Without a public key "Pagar plan" opens the simulated checkout (DEC-PLAT-08).
+  # Without a Wompi public key, "Pagar plan" opens the simulated checkout only when the host sets this to
+  # true (DEC-PLAT-08); with neither, it answers 503 and the simulator stays closed.
+  payments:
+    simulator: ${PAYMENTS_SIMULATOR:false}
+  # Wompi in sandbox (ADR-017).
   wompi:
     checkout-url: ${WOMPI_CHECKOUT_URL:https://checkout.wompi.co/p/}
     public-key: ${WOMPI_PUBLIC_KEY:}
