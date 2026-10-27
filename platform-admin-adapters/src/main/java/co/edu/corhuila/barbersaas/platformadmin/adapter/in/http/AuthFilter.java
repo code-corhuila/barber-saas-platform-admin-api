@@ -25,6 +25,9 @@ public class AuthFilter extends OncePerRequestFilter {
     /** POST from Wompi: no token, its checksum is checked by the controller (DEC-PLAT-06). */
     private static final String WOMPI_EVENTS = "/api/v1/payments/wompi/events";
 
+    /** The simulated checkout page and its buttons (DEC-PLAT-08): opened from the phone's browser, no token. */
+    private static final String SIMULATOR = "/api/v1/payments/simulator/";
+
     private final Rs256Verifier verifier;
     private final ObjectMapper json;
 
@@ -43,6 +46,9 @@ public class AuthFilter extends OncePerRequestFilter {
             return true;
         }
         if ("POST".equals(request.getMethod()) && WOMPI_EVENTS.equals(path)) {
+            return true;
+        }
+        if (path.startsWith(SIMULATOR)) {
             return true;
         }
         return "GET".equals(request.getMethod()) && PUBLIC.matcher(path).matches();
