@@ -6,6 +6,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Payments;
 import co.edu.corhuila.barbersaas.platformadmin.domain.model.Payment;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +41,14 @@ public class InMemoryPayments implements Payments {
         return rows.values().stream()
                 .filter(p -> p.barbershopId().equals(barbershopId) && Payment.APPROVED.equals(p.status()))
                 .map(Payment::periodEnd).max(Comparator.naturalOrder());
+    }
+
+    @Override
+    public Revenue revenue(Instant since) {
+        List<Payment> approved = rows.values().stream().filter(p -> Payment.APPROVED.equals(p.status())).toList();
+        List<Payment> recent = approved.stream().filter(p -> !p.updatedAt().isBefore(since)).toList();
+        return new Revenue(approved.stream().mapToLong(Payment::amountCents).sum(),
+                recent.stream().mapToLong(Payment::amountCents).sum(), recent.size());
     }
 
     @Override
