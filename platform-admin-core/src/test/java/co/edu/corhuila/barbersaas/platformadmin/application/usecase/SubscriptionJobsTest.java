@@ -42,7 +42,8 @@ class SubscriptionJobsTest {
             id -> List.of(new Owner(UUID.randomUUID(), "Andres Rojas", "andres@example.com")), plans, UUID::randomUUID,
             Clock.fixed(NOW, ZoneOffset.UTC));
     private final SubscriptionJobs jobs = new SubscriptionJobs(shops, payments(), events, Clock.fixed(NOW, ZoneOffset.UTC));
-    private final Caller worker = new Caller(ExpireTrials.WORKER, Role.SERVICE, null);
+    private final Caller worker = new Caller(ExpireTrials.WORKER, Role.SERVICE, null,
+            Set.of("outbox:relay", "jobs:run", SubscriptionJobs.EXPIRE_SCOPE));
 
     @Test
     void a_paid_month_that_ended_suspends_and_announces_it() {
@@ -113,6 +114,17 @@ class SubscriptionJobsTest {
         shops.add("TRIAL", null, NOW.minus(Duration.ofDays(61)));
         new ExpireTrials(shops, Clock.fixed(NOW, ZoneOffset.UTC), events).expire(worker, 10);
         assertEquals("TRIAL_EXPIRED", outbox.events.get(0).payload().get("reason"));
+    }
+
+    @Test
+    void a_worker_token_without_the_expire_scope_suspends_nothing() {           // docs#159
+        Barbershop ended = shops.add("ACTIVE", null, NOW.minus(Duration.ofDays(100)));
+        paidUntil.put(ended.id(), NOW.minus(Duration.ofHours(1)));
+        Caller relayOnly = new Caller(ExpireTrials.WORKER, Role.SERVICE, null, Set.of("outbox:relay", "jobs:run"));
+
+        assertThrows(Forbidden.class, () -> jobs.expire(relayOnly, 50));
+        assertThrows(Forbidden.class, () -> jobs.expire(new Caller(ExpireTrials.WORKER, Role.SERVICE, null), 50));
+        assertEquals("ACTIVE", shops.get(ended.id()).status());
     }
 
     @Test
