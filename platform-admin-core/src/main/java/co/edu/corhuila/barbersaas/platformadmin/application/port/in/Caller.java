@@ -7,9 +7,10 @@ import java.util.UUID;
 
 /**
  * Who calls, taken ONLY from the validated token (authentication.md, "Multi-tenancy"): the
- * subject, the role and the tenant. No use case receives the tenant from the path, query or body.
+ * subject, the role, the tenant and, for a service token, its scopes. No use case receives the
+ * tenant from the path, query or body.
  */
-public record Caller(String subject, Role role, UUID barbershopId) {
+public record Caller(String subject, Role role, UUID barbershopId, Set<String> scopes) {
 
     /** The four user roles of identity-auth plus SERVICE, for the tokens of worker and workflow. */
     public enum Role { SUPER_ADMIN, ADMIN_BARBERSHOP, BARBER, CLIENT, SERVICE }
@@ -17,6 +18,12 @@ public record Caller(String subject, Role role, UUID barbershopId) {
     public Caller {
         Objects.requireNonNull(subject);
         Objects.requireNonNull(role);
+        scopes = scopes == null ? Set.of() : Set.copyOf(scopes);
+    }
+
+    /** A caller whose token carries no scope. */
+    public Caller(String subject, Role role, UUID barbershopId) {
+        this(subject, role, barbershopId, Set.of());
     }
 
     /** The tenant every scoped read and write filters by; SUPER_ADMIN and a client without one are refused. */
@@ -37,6 +44,14 @@ public record Caller(String subject, Role role, UUID barbershopId) {
     public void requireService(String service) {
         if (role != Role.SERVICE || !subject.equals(service)) {
             throw new Forbidden("Only " + service + " can do this");
+        }
+    }
+
+    /** As {@link #requireService}, and the token must grant {@code scope} (docs#159). */
+    public void requireService(String service, String scope) {
+        requireService(service);
+        if (!scopes.contains(scope)) {
+            throw new Forbidden("The token of " + service + " does not grant " + scope);
         }
     }
 

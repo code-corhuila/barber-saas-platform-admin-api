@@ -83,6 +83,21 @@ class SubscriptionJobsHttpTest extends HttpTest {
     }
 
     @Test
+    void suspending_paid_barbershops_needs_the_expire_scope() throws Exception {     // docs#159
+        String relayOnly = serviceBearer("barber-saas-worker", "outbox:relay jobs:run");
+        http.perform(post("/internal/v1/subscriptions/expire").header("Authorization", relayOnly))
+                .andExpect(status().isForbidden());
+        http.perform(post("/internal/v1/subscriptions/expire").header("Authorization", serviceBearer("barber-saas-worker")))
+                .andExpect(status().isForbidden());
+        http.perform(post("/internal/v1/subscriptions/expire")
+                        .header("Authorization", serviceBearer("barber-saas-worker", "outbox:relay subscriptions:expire")))
+                .andExpect(status().isOk());
+        http.perform(post("/internal/v1/subscriptions/expire")
+                        .header("Authorization", serviceBearer("barber-saas-workflow", "subscriptions:expire")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void only_the_worker_calls_them() throws Exception {
         for (String token : new String[] {superAdmin(), serviceBearer("barber-saas-workflow")}) {
             http.perform(post("/internal/v1/subscriptions/expire").header("Authorization", token))
