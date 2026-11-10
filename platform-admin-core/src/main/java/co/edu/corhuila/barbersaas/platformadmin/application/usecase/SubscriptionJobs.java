@@ -24,6 +24,8 @@ public class SubscriptionJobs {
     public record Result(int processed, boolean remaining) { }
 
     static final int READ_PAGE = 100;
+    /** Suspending paid barbershops needs its own scope: a leaked relay token cannot do it (docs#159). */
+    public static final String EXPIRE_SCOPE = "subscriptions:expire";
     private static final Logger LOG = Logger.getLogger(SubscriptionJobs.class.getName());
 
     private final Barbershops barbershops;
@@ -40,7 +42,7 @@ public class SubscriptionJobs {
 
     /** ACTIVE with a paidUntil in the past: SUSPENDED. ACTIVE without any payment was activated by hand: kept. */
     public Result expire(Caller caller, int limit) {
-        caller.requireService(ExpireTrials.WORKER);
+        caller.requireService(ExpireTrials.WORKER, EXPIRE_SCOPE);
         Instant now = clock.instant();
         int suspended = 0;
         for (Barbershop b : all("ACTIVE", null)) {
