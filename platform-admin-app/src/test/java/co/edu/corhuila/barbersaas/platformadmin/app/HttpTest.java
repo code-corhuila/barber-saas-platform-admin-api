@@ -60,13 +60,23 @@ abstract class HttpTest {
 
     /** "Bearer ..." for a service token: role SERVICE, the service name as sub, no barbershop. */
     static String serviceBearer(String service) {
-        return signed(service, "SERVICE", null);
+        return signed(service, "SERVICE", null, null);
+    }
+
+    /** A service token that grants {@code scope}, space-separated as identity-auth writes it (docs#159). */
+    static String serviceBearer(String service, String scope) {
+        return signed(service, "SERVICE", null, scope);
     }
 
     private static String signed(String subject, String role, UUID barbershopId) {
+        return signed(subject, role, barbershopId, null);
+    }
+
+    private static String signed(String subject, String role, UUID barbershopId, String scope) {
         long now = Instant.now().getEpochSecond();
         String claims = "{\"iss\":\"barber-saas-identity-auth-api\",\"sub\":\"" + subject + "\",\"role\":\"" + role + "\""
                 + (barbershopId == null ? "" : ",\"barbershopId\":\"" + barbershopId + "\"")
+                + (scope == null ? "" : ",\"scope\":\"" + scope + "\"")
                 + ",\"iat\":" + now + ",\"exp\":" + (now + 600) + "}";
         try {
             String input = b64("{\"alg\":\"RS256\",\"typ\":\"JWT\",\"kid\":\"dev-1\"}") + "." + b64(claims);
