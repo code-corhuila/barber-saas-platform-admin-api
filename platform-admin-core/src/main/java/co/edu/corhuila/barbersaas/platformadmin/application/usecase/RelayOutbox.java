@@ -17,6 +17,9 @@ public class RelayOutbox {
     public record EventEnvelope(UUID id, String type, int version, Instant occurredAt, String aggregateType,
                                 UUID aggregateId, UUID barbershopId, String correlationId, Map<String, Object> payload) { }
 
+    /** The scope of reading and confirming the outbox (07-api/authentication.md, Scopes; docs#159). */
+    public static final String RELAY_SCOPE = "outbox:relay";
+
     /** Every platform-admin event is at version 1; it grows only when a payload gains a field. */
     static final int VERSION = 1;
 
@@ -29,7 +32,7 @@ public class RelayOutbox {
     }
 
     public List<EventEnvelope> pending(Caller caller, int limit) {
-        caller.requireService(ExpireTrials.WORKER);
+        caller.requireService(ExpireTrials.WORKER, RELAY_SCOPE);
         return outbox.pending(limit).stream().map(s -> {
             OutboxEvent e = s.event();
             return new EventEnvelope(e.id(), e.type(), VERSION, e.occurredAt(), OutboxEvent.AGGREGATE_TYPE,
@@ -38,14 +41,14 @@ public class RelayOutbox {
     }
 
     public void published(Caller caller, UUID id) {
-        caller.requireService(ExpireTrials.WORKER);
+        caller.requireService(ExpireTrials.WORKER, RELAY_SCOPE);
         if (!outbox.markPublished(id, clock.instant())) {
             throw new NotFound("Outbox event");
         }
     }
 
     public void failed(Caller caller, UUID id, String reason) {
-        caller.requireService(ExpireTrials.WORKER);
+        caller.requireService(ExpireTrials.WORKER, RELAY_SCOPE);
         if (!outbox.markFailed(id, reason, clock.instant())) {
             throw new NotFound("Outbox event");
         }
