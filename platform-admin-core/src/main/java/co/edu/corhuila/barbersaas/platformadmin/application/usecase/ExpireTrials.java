@@ -16,6 +16,8 @@ import java.time.Clock;
 public class ExpireTrials {
 
     public static final String WORKER = "barber-saas-worker";
+    /** The scope of the daily jobs: expiring trials and the plan notices (07-api/authentication.md; docs#159). */
+    public static final String JOBS_SCOPE = "jobs:run";
     private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(ExpireTrials.class.getName());
 
     /** ExpiredTrials of platform-admin-service.yaml. */
@@ -37,7 +39,7 @@ public class ExpireTrials {
     }
 
     public Result expire(Caller caller, int limit) {
-        caller.requireService(WORKER);
+        caller.requireService(WORKER, JOBS_SCOPE);
         Page<Barbershop> due = barbershops.list("TRIAL", null, clock.instant(), new Page.Request(1, limit));
         int suspended = 0;
         for (Barbershop b : due.items()) {

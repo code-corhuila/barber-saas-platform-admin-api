@@ -95,7 +95,7 @@ class BarbershopHttpTest extends HttpTest {
     @Test
     void the_worker_expires_trials_and_nobody_else_can() throws Exception {
         UUID expired = BARBERSHOPS.add("TRIAL", null, 61);
-        http.perform(post("/internal/v1/trials/expire?limit=100").header("Authorization", serviceBearer("barber-saas-worker")))
+        http.perform(post("/internal/v1/trials/expire?limit=100").header("Authorization", serviceBearer("barber-saas-worker", "jobs:run")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.remaining").value(false));
         http.perform(get("/api/v1/platform/barbershops/" + expired).header("Authorization", superAdmin()))
