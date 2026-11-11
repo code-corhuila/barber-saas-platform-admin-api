@@ -58,10 +58,18 @@ public class InternalSubscriptionController {
         return JobResult.of(jobs.notices(caller, Requests.page(1, limit).limit()));
     }
 
+    /** The largest batch: a stolen worker token reads every tenant's pending events only slowly (docs#160). */
+    static final int MAX_OUTBOX_LIMIT = 50;
+
+    /** listPendingOutboxEvents: at most {@code limit} (1–50, default 20), oldest first. */
     @GetMapping("/internal/v1/outbox-events")
     public PendingView pending(@RequestAttribute(AuthFilter.CALLER_ATTRIBUTE) Caller caller,
                                @RequestParam(required = false) Integer limit) {
-        return new PendingView(relay.pending(caller, Requests.page(1, limit).limit()));
+        if (limit != null && (limit < 1 || limit > MAX_OUTBOX_LIMIT)) {
+            throw new ValidationException("the request is not valid",
+                    List.of(new FieldError("limit", "between 1 and " + MAX_OUTBOX_LIMIT)));
+        }
+        return new PendingView(relay.pending(caller, limit == null ? 20 : limit));
     }
 
     @PostMapping("/internal/v1/outbox-events/{id}/published")
