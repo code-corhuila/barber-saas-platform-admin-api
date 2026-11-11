@@ -22,6 +22,8 @@ import org.springframework.test.context.DynamicPropertySource;
 class SubscriptionJobsHttpTest extends HttpTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    /** The scopes of the worker's token for platform-admin (07-api/authentication.md; dev-keys.sh). */
+    private static final String WORKER_SCOPES = "outbox:relay jobs:run subscriptions:expire";
     private static final HttpServer IDENTITY = identityAuth();
 
     /** identity-auth's GET /internal/v1/owners: one owner for every barbershop. */
@@ -51,7 +53,7 @@ class SubscriptionJobsHttpTest extends HttpTest {
     @Test
     void a_trial_ending_soon_is_announced_once_and_relayed_to_the_worker() throws Exception {
         UUID shop = BARBERSHOPS.add("TRIAL", null, 55);                       // 5 days left
-        String worker = serviceBearer("barber-saas-worker");
+        String worker = serviceBearer("barber-saas-worker", WORKER_SCOPES);
 
         http.perform(post("/internal/v1/subscriptions/notices").header("Authorization", worker))
                 .andExpect(status().isOk());
@@ -73,7 +75,7 @@ class SubscriptionJobsHttpTest extends HttpTest {
     @Test
     void an_expired_trial_writes_barbershop_suspended() throws Exception {
         UUID shop = BARBERSHOPS.add("TRIAL", null, 70);
-        String worker = serviceBearer("barber-saas-worker");
+        String worker = serviceBearer("barber-saas-worker", WORKER_SCOPES);
 
         http.perform(post("/internal/v1/trials/expire").header("Authorization", worker)).andExpect(status().isOk());
 
@@ -95,6 +97,24 @@ class SubscriptionJobsHttpTest extends HttpTest {
         http.perform(post("/internal/v1/subscriptions/expire")
                         .header("Authorization", serviceBearer("barber-saas-workflow", "subscriptions:expire")))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void each_internal_operation_needs_its_own_scope() throws Exception {             // docs#159
+        String deliverOnly = serviceBearer("barber-saas-worker", "events:deliver");
+        String relayOnly = serviceBearer("barber-saas-worker", "outbox:relay");
+        for (String token : new String[] {deliverOnly, serviceBearer("barber-saas-worker")}) {
+            http.perform(get("/internal/v1/outbox-events").header("Authorization", token))
+                    .andExpect(status().isForbidden());
+            http.perform(post("/internal/v1/outbox-events/" + UUID.randomUUID() + "/published")
+                    .header("Authorization", token)).andExpect(status().isForbidden());
+        }
+        http.perform(post("/internal/v1/trials/expire").header("Authorization", relayOnly))
+                .andExpect(status().isForbidden());
+        http.perform(post("/internal/v1/subscriptions/notices").header("Authorization", relayOnly))
+                .andExpect(status().isForbidden());
+        http.perform(get("/internal/v1/outbox-events").header("Authorization", relayOnly))
+                .andExpect(status().isOk());
     }
 
     @Test

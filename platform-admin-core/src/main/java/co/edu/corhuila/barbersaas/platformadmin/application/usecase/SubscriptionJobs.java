@@ -65,7 +65,7 @@ public class SubscriptionJobs {
 
     /** PlanExpiringSoon at 7 days and at 1 day before trialEndsAt (TRIAL) or paidUntil (ACTIVE). */
     public Result notices(Caller caller, int limit) {
-        caller.requireService(ExpireTrials.WORKER);
+        caller.requireService(ExpireTrials.WORKER, ExpireTrials.JOBS_SCOPE);
         Instant now = clock.instant();
         int written = 0;
         List<Barbershop> candidates = new ArrayList<>(all("TRIAL", now.plus(Duration.ofDays(7))));
