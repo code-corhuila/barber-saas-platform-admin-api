@@ -8,7 +8,7 @@ All notable changes to `barber-saas-platform-admin-api` are recorded here. The f
 
 MVP 3 (corte 3): promoted from `develop` through `qa` with `git cherry-pick -x` (norm 10–11).
 
-User stories: code-corhuila/barber-saas-docs#126, code-corhuila/barber-saas-docs#127, code-corhuila/barber-saas-docs#128, code-corhuila/barber-saas-docs#157, code-corhuila/barber-saas-docs#159.
+User stories: code-corhuila/barber-saas-docs#126, code-corhuila/barber-saas-docs#127, code-corhuila/barber-saas-docs#128, code-corhuila/barber-saas-docs#157, code-corhuila/barber-saas-docs#159, code-corhuila/barber-saas-docs#160.
 
 ### Added
 
@@ -34,6 +34,7 @@ User stories: code-corhuila/barber-saas-docs#126, code-corhuila/barber-saas-docs
 - **metrics:** add the platform-wide metrics of FR-023
 - **security:** suspend paid barbershops only with the subscriptions:expire scope
 - **security:** relay the outbox only with outbox:relay and run the daily jobs only with jobs:run
+- **outbox:** read at most fifty pending events per call
 
 ### Fixed
 
