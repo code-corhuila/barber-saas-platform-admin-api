@@ -33,6 +33,7 @@ User stories: code-corhuila/barber-saas-docs#126, code-corhuila/barber-saas-docs
 - **subscriptions:** name the plan in PlanExpiringSoon
 - **metrics:** add the platform-wide metrics of FR-023
 - **security:** suspend paid barbershops only with the subscriptions:expire scope
+- **security:** relay the outbox only with outbox:relay and run the daily jobs only with jobs:run
 
 ### Fixed
 
