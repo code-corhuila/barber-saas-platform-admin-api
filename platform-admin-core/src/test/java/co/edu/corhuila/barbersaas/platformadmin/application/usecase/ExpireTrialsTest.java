@@ -12,6 +12,7 @@ import co.edu.corhuila.barbersaas.platformadmin.application.port.out.Barbershops
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +21,7 @@ class ExpireTrialsTest {
     private static final Instant NOW = Instant.parse("2026-10-06T12:00:00Z");
     private final FakeBarbershops shops = new FakeBarbershops();
     private final ExpireTrials expire = new ExpireTrials(shops, Clock.fixed(NOW, ZoneOffset.UTC));
-    private final Caller worker = new Caller(ExpireTrials.WORKER, Role.SERVICE, null);
+    private final Caller worker = new Caller(ExpireTrials.WORKER, Role.SERVICE, null, Set.of(ExpireTrials.JOBS_SCOPE));
 
     @Test
     void an_expired_trial_is_suspended_and_a_running_one_is_not() {
@@ -53,5 +54,15 @@ class ExpireTrialsTest {
         Caller other = new Caller("barber-saas-workflow", Role.SERVICE, null);
         assertThrows(Forbidden.class, () -> expire.expire(admin, 10));
         assertThrows(Forbidden.class, () -> expire.expire(other, 10));
+    }
+
+    @Test
+    void a_worker_token_without_the_jobs_scope_suspends_nothing() {                 // docs#159
+        Barbershop expired = shops.add("TRIAL", null, NOW.minusSeconds(86_400 * 61));
+        Caller relayOnly = new Caller(ExpireTrials.WORKER, Role.SERVICE, null, Set.of("outbox:relay"));
+
+        assertThrows(Forbidden.class, () -> expire.expire(relayOnly, 10));
+        assertThrows(Forbidden.class, () -> expire.expire(new Caller(ExpireTrials.WORKER, Role.SERVICE, null), 10));
+        assertEquals("TRIAL", shops.get(expired.id()).status());
     }
 }
