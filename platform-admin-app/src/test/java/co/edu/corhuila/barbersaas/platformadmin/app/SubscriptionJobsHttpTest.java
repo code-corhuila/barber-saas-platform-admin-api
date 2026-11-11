@@ -118,6 +118,18 @@ class SubscriptionJobsHttpTest extends HttpTest {
     }
 
     @Test
+    void the_outbox_gives_at_most_fifty_events_per_call() throws Exception {          // docs#160
+        String worker = serviceBearer("barber-saas-worker", WORKER_SCOPES);
+        for (String limit : new String[] {"51", "0"}) {
+            http.perform(get("/internal/v1/outbox-events?limit=" + limit).header("Authorization", worker))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.details[0].field").value("limit"));
+        }
+        http.perform(get("/internal/v1/outbox-events?limit=50").header("Authorization", worker))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void only_the_worker_calls_them() throws Exception {
         for (String token : new String[] {superAdmin(), serviceBearer("barber-saas-workflow")}) {
             http.perform(post("/internal/v1/subscriptions/expire").header("Authorization", token))
@@ -128,7 +140,7 @@ class SubscriptionJobsHttpTest extends HttpTest {
     }
 
     private JsonNode eventOf(String worker, UUID shop) throws Exception {
-        String body = http.perform(get("/internal/v1/outbox-events?limit=100").header("Authorization", worker))
+        String body = http.perform(get("/internal/v1/outbox-events?limit=50").header("Authorization", worker))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         for (JsonNode e : JSON.readTree(body).get("data")) {
             if (shop.toString().equals(e.get("aggregateId").asText())) {
